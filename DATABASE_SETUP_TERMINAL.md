@@ -69,7 +69,7 @@ Execute the schema file to create all tables:
 cd "D:\chandan\devops\dock+kub+jenk"
 
 # Run the schema file (you'll be prompted for password)
-psql -U postgres -d inventory_db -f backend\database\schema.sql
+ 
 ```
 
 **OR** if psql is not in PATH:

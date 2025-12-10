@@ -6,8 +6,14 @@ set -e
 
 echo "Starting database initialization..."
 
+# Resolve connection parameters from env:
+PGHOST="${DB_HOST:-localhost}"
+PGPORT="${DB_PORT:-5432}"
+PGUSER="${DB_USER:-${POSTGRES_USER:-postgres}}"
+PGDATABASE="${DB_NAME:-${POSTGRES_DB:-inventory_db}}"
+
 # Wait for PostgreSQL to be ready
-until pg_isready -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "${DB_USER:-postgres}"; do
+until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; do
   echo "Waiting for PostgreSQL to be ready..."
   sleep 2
 done
@@ -15,26 +21,21 @@ done
 echo "PostgreSQL is ready!"
 
 # Create database if it doesn't exist
-psql -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "${DB_USER:-postgres}" -tc "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME:-inventory_db}'" | grep -q 1 || \
-psql -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "${DB_USER:-postgres}" -c "CREATE DATABASE ${DB_NAME:-inventory_db};"
+psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -tc \
+  "SELECT 1 FROM pg_database WHERE datname = '$PGDATABASE'" | grep -q 1 || \
+psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -c "CREATE DATABASE $PGDATABASE;"
 
-echo "Database '${DB_NAME:-inventory_db}' is ready"
+echo "Database '$PGDATABASE' is ready"
 
-# Run schema
 echo "Running schema..."
-psql -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "${DB_USER:-postgres}" -d "${DB_NAME:-inventory_db}" -f /scripts/schema.sql
+psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -f /schema.sql
 
-echo "Schema applied successfully"
-
-# Optionally load sample data (only if DB_LOAD_SAMPLE_DATA is set to 'true')
 if [ "${DB_LOAD_SAMPLE_DATA:-false}" = "true" ]; then
   echo "Loading sample data..."
-  psql -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "${DB_USER:-postgres}" -d "${DB_NAME:-inventory_db}" -f /scripts/init.sql
+  psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -f /init.sql
   echo "Sample data loaded"
 else
   echo "Skipping sample data (set DB_LOAD_SAMPLE_DATA=true to load)"
 fi
 
 echo "Database initialization complete!"
-
-

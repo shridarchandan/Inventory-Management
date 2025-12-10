@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  Stack,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  IconButton,
+  CircularProgress,
+  ImageList,
+  ImageListItem,
+} from '@mui/material';
+import { Edit, Delete, Close } from '@mui/icons-material';
 import { productsAPI, categoriesAPI, suppliersAPI } from '../services/api';
-import { FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
-import './Products.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -53,7 +73,7 @@ const Products = () => {
       const submitData = {
         ...formData,
         price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity),
+        quantity: parseInt(formData.quantity, 10),
         category_id: formData.category_id || null,
         supplier_id: formData.supplier_id || null,
       };
@@ -67,7 +87,6 @@ const Products = () => {
         productId = response.data.id;
       }
 
-      // Upload images if any were selected
       if (selectedImages.length > 0 && productId) {
         await handleImageUpload(productId);
       }
@@ -84,12 +103,12 @@ const Products = () => {
 
     setUploadingImages(true);
     try {
-      const formData = new FormData();
+      const fd = new FormData();
       selectedImages.forEach((file) => {
-        formData.append('images', file);
+        fd.append('images', file);
       });
 
-      await productsAPI.uploadImages(productId, formData);
+      await productsAPI.uploadImages(productId, fd);
       setSelectedImages([]);
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -101,11 +120,11 @@ const Products = () => {
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
-    setSelectedImages([...selectedImages, ...files]);
+    setSelectedImages((prev) => [...prev, ...files]);
   };
 
   const removeSelectedImage = (index) => {
-    setSelectedImages(selectedImages.filter((_, i) => i !== index));
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteImage = async (productId, imageId, e) => {
@@ -163,308 +182,382 @@ const Products = () => {
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
-    // Handle both relative and absolute paths
     if (imagePath.startsWith('http')) return imagePath;
     return `${API_BASE_URL}/${imagePath}`;
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div className="products-container">
-      <div className="page-header">
-        <h2>Products</h2>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
+        <Typography variant="h6" fontWeight={600}>
+          Products
+        </Typography>
+        <Button variant="contained" onClick={() => setShowModal(true)}>
           + Add Product
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="products-grid">
-        {products.length === 0 ? (
-          <p className="empty-state">No products found. Add your first product!</p>
-        ) : (
-          products.map((product) => (
-            <div key={product.id} className="product-card">
-              {/* Product Images Gallery */}
-              {product.images && product.images.length > 0 && (
-                <div className="product-images">
-                  <div className="product-image-main">
-                    <img
-                      src={getImageUrl(product.images[0].thumbnail_path || product.images[0].image_path)}
+      {products.length === 0 ? (
+        <Typography color="text.secondary">
+          No products found. Add your first product!
+        </Typography>
+      ) : (
+        <Grid container spacing={2}>
+          {products.map((product) => (
+            <Grid item xs={12} sm={6} md={4} key={product.id}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: 3,
+                }}
+              >
+                {product.images && product.images.length > 0 && (
+                  <Box sx={{ position: 'relative' }}>
+                    <CardMedia
+                      component="img"
+                      height="180"
+                      image={getImageUrl(
+                        product.images[0].thumbnail_path ||
+                          product.images[0].image_path
+                      )}
                       alt={product.name}
+                      sx={{ cursor: 'pointer' }}
                       onClick={() => setShowImageGallery(product.id)}
                     />
                     {product.images.length > 1 && (
-                      <div className="image-count-badge">{product.images.length}</div>
+                      <Chip
+                        label={`${product.images.length} images`}
+                        size="small"
+                        color="default"
+                        sx={{ position: 'absolute', top: 8, right: 8 }}
+                      />
                     )}
-                  </div>
-                  {product.images.length > 1 && (
-                    <div className="product-image-thumbnails">
-                      {product.images.slice(0, 4).map((img, idx) => (
-                        <img
-                          key={img.id}
-                          src={getImageUrl(img.thumbnail_path || img.image_path)}
-                          alt={`${product.name} ${idx + 1}`}
-                          onClick={() => setShowImageGallery(product.id)}
-                        />
-                      ))}
-                    </div>
+                  </Box>
+                )}
+                <CardContent sx={{ flex: 1 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                    mb={1}
+                  >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {product.name}
+                    </Typography>
+                    <Stack direction="row" spacing={0.5}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEdit(product)}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                  {product.description && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {product.description}
+                    </Typography>
                   )}
-                </div>
-              )}
-              <div className="product-header">
-                <h3>{product.name}</h3>
-                <div className="product-actions">
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleEdit(product)}
-                    title="Edit"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleDelete(product.id)}
-                    title="Delete"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
-              <p className="product-description">{product.description}</p>
-              <div className="product-details">
-                <div className="detail-item">
-                  <span className="label">Price:</span>
-                  <span className="value">${parseFloat(product.price).toFixed(2)}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Quantity:</span>
-                  <span className={`value ${product.quantity <= 10 ? 'low-stock' : ''}`}>
-                    {product.quantity}
-                  </span>
-                </div>
-                {product.sku && (
-                  <div className="detail-item">
-                    <span className="label">SKU:</span>
-                    <span className="value">{product.sku}</span>
-                  </div>
-                )}
-                {product.category_name && (
-                  <div className="detail-item">
-                    <span className="label">Category:</span>
-                    <span className="value">{product.category_name}</span>
-                  </div>
-                )}
-                {product.supplier_name && (
-                  <div className="detail-item">
-                    <span className="label">Supplier:</span>
-                    <span className="value">{product.supplier_name}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+                  <Stack spacing={0.5}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">
+                        Price
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        ${parseFloat(product.price).toFixed(2)}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">
+                        Quantity
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        color={product.quantity <= 10 ? 'error.main' : 'text.primary'}
+                      >
+                        {product.quantity}
+                      </Typography>
+                    </Stack>
+                    {product.sku && (
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">
+                          SKU
+                        </Typography>
+                        <Typography variant="body2">{product.sku}</Typography>
+                      </Stack>
+                    )}
+                    {product.category_name && (
+                      <Typography variant="body2" color="text.secondary">
+                        Category: {product.category_name}
+                      </Typography>
+                    )}
+                    {product.supplier_name && (
+                      <Typography variant="body2" color="text.secondary">
+                        Supplier: {product.supplier_name}
+                      </Typography>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
-      {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button className="btn-close" onClick={handleCloseModal}>
-                <FaTimes />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="form">
-              <div className="form-group">
-                <label>Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows="3"
-                />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Price *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Quantity *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>SKU</label>
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Category</label>
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  >
-                    <option value="">None</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Supplier</label>
-                  <select
-                    value={formData.supplier_id}
-                    onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-                  >
-                    <option value="">None</option>
-                    {suppliers.map((sup) => (
-                      <option key={sup.id} value={sup.id}>
-                        {sup.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              {/* Image Upload Section */}
-              <div className="form-group">
-                <label>Product Images</label>
+      <Dialog open={showModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ flexGrow: 1 }}>
+            {editingProduct ? 'Edit Product' : 'Add New Product'}
+          </Typography>
+          <IconButton onClick={handleCloseModal}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            <TextField
+              label="Name"
+              required
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+            <TextField
+              label="Description"
+              multiline
+              minRows={3}
+              value={formData.description}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              }
+            />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Price"
+                type="number"
+                required
+                fullWidth
+                inputProps={{ min: 0, step: 0.01 }}
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, price: e.target.value }))
+                }
+              />
+              <TextField
+                label="Quantity"
+                type="number"
+                required
+                fullWidth
+                inputProps={{ min: 0 }}
+                value={formData.quantity}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, quantity: e.target.value }))
+                }
+              />
+            </Stack>
+            <TextField
+              label="SKU"
+              value={formData.sku}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, sku: e.target.value }))
+              }
+            />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                select
+                fullWidth
+                label="Category"
+                value={formData.category_id}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    category_id: e.target.value,
+                  }))
+                }
+              >
+                <MenuItem value="">None</MenuItem>
+                {categories.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                fullWidth
+                label="Supplier"
+                value={formData.supplier_id}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    supplier_id: e.target.value,
+                  }))
+                }
+              >
+                <MenuItem value="">None</MenuItem>
+                {suppliers.map((sup) => (
+                  <MenuItem key={sup.id} value={sup.id}>
+                    {sup.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Product Images
+              </Typography>
+              <Button variant="outlined" component="label">
+                Select Images
                 <input
                   type="file"
                   accept="image/*"
                   multiple
+                  hidden
                   onChange={handleImageSelect}
-                  className="file-input"
                 />
-                {selectedImages.length > 0 && (
-                  <div className="selected-images-preview">
-                    {selectedImages.map((file, index) => (
-                      <div key={index} className="image-preview-item">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Preview ${index + 1}`}
-                        />
-                        <button
-                          type="button"
-                          className="remove-image-btn"
-                          onClick={() => removeSelectedImage(index)}
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
-                  <div className="existing-images">
-                    <label>Existing Images:</label>
-                    <div className="existing-images-grid">
+              </Button>
+              {selectedImages.length > 0 && (
+                <ImageList cols={4} gap={8} sx={{ mt: 1 }}>
+                  {selectedImages.map((file, index) => (
+                    <ImageListItem key={index} sx={{ position: 'relative' }}>
+                      <img src={URL.createObjectURL(file)} alt={`Preview ${index}`} />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          bgcolor: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                        }}
+                        onClick={() => removeSelectedImage(index)}
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </ImageListItem>
+                  ))}
+                </ImageList>
+              )}
+
+              {editingProduct &&
+                editingProduct.images &&
+                editingProduct.images.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Existing Images
+                    </Typography>
+                    <ImageList cols={4} gap={8}>
                       {editingProduct.images.map((img) => (
-                        <div key={img.id} className="existing-image-item">
+                        <ImageListItem key={img.id} sx={{ position: 'relative' }}>
                           <img
-                            src={getImageUrl(img.thumbnail_path || img.image_path)}
+                            src={getImageUrl(
+                              img.thumbnail_path || img.image_path
+                            )}
                             alt="Product"
                           />
-                          <button
-                            type="button"
-                            className="remove-image-btn"
-                            onClick={(e) => handleDeleteImage(editingProduct.id, img.id, e)}
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              bgcolor: 'rgba(0,0,0,0.6)',
+                              color: 'white',
+                            }}
+                            onClick={(e) =>
+                              handleDeleteImage(editingProduct.id, img.id, e)
+                            }
                           >
-                            <FaTimes />
-                          </button>
-                        </div>
+                            <Close fontSize="small" />
+                          </IconButton>
+                        </ImageListItem>
                       ))}
-                    </div>
-                  </div>
+                    </ImageList>
+                  </Box>
                 )}
-                {!editingProduct && (
-                  <small className="form-hint">You can upload images after creating the product</small>
-                )}
-              </div>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={handleSubmit} variant="contained">
+            {editingProduct ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingProduct ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Image Gallery Modal */}
-      {showImageGallery && (
-        <div className="modal-overlay" onClick={() => setShowImageGallery(null)}>
-          <div className="gallery-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="gallery-header">
-              <h3>Product Images</h3>
-              <button className="btn-close" onClick={() => setShowImageGallery(null)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="gallery-content">
-              {products.find(p => p.id === showImageGallery)?.images?.map((img) => (
-                <div key={img.id} className="gallery-image-item">
-                  <img
-                    src={getImageUrl(img.image_path)}
-                    alt="Product"
-                  />
-                  <button
-                    className="gallery-delete-btn"
+      <Dialog
+        open={Boolean(showImageGallery)}
+        onClose={() => setShowImageGallery(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ flexGrow: 1 }}>Product Images</Typography>
+          <IconButton onClick={() => setShowImageGallery(null)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <ImageList cols={3} gap={12}>
+            {products
+              .find((p) => p.id === showImageGallery)
+              ?.images?.map((img) => (
+                <ImageListItem key={img.id}>
+                  <img src={getImageUrl(img.image_path)} alt="Product" />
+                  <Button
+                    size="small"
+                    color="error"
+                    sx={{ mt: 1 }}
                     onClick={(e) => {
                       handleDeleteImage(showImageGallery, img.id, e);
-                      if (products.find(p => p.id === showImageGallery)?.images?.length === 1) {
-                        setShowImageGallery(null);
-                      }
                     }}
                   >
                     Delete
-                  </button>
-                </div>
+                  </Button>
+                </ImageListItem>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </ImageList>
+        </DialogContent>
+      </Dialog>
+    </Box>
   );
 };
 
 export default Products;
-
 

@@ -1,0 +1,95 @@
+1. Authentication & Authorization
+User accounts
+Sign up, login, logout.
+Password reset (email/OTP link) and change password.
+Security
+Password hashing (bcrypt/argon2).
+JWT-based auth (access + refresh tokens) or HTTP-only session cookies.
+Role‑Based Access Control (RBAC)
+Roles: Admin, Manager, Staff, Viewer.
+Route guards in Express and protected routes in React.
+Permissions examples:
+Admin: manage users, roles, all entities and settings.
+Manager: full CRUD on stock, POs/SOs, reports, but no user management.
+Staff: limited CRUD (e.g., only create/edit orders, no delete).
+Viewer: read‑only dashboards and reports.
+Audit logs
+Table like audit_logs(user_id, action, entity_type, entity_id, before, after, timestamp).
+Show recent activity in an admin “Activity” page.
+2. Extended Data Model & Inventory Workflows
+New entities
+Warehouse (locations) with per‑warehouse stock.
+Customer.
+PurchaseOrder / PurchaseOrderItem.
+SalesOrder / SalesOrderItem.
+StockMovement (every stock in/out event: PO receive, SO ship, adjustment, transfer).
+Inventory behavior
+Automatic stock updates via StockMovement instead of directly editing products.quantity.
+Reorder points & safety stock per product (by warehouse).
+Low‑stock and out‑of‑stock flags.
+Optional batch/lot + expiry tracking (batches table) for products.
+Workflows
+Purchase flow: create PO → set status (Draft → Ordered → Received → Closed) → receive items updates stock.
+Sales flow: create SO → Reserve → Shipped → Closed, with optional “Cancelled” status.
+Stock transfer: move quantity from one warehouse to another (two StockMovement records).
+Stock adjustment: manual corrections with reason codes (damage, shrinkage, audit correction).
+3. Advanced Product Management
+Richer product fields
+Multiple images (you already have image support; extend it to gallery + cover image).
+SKU, barcode, brand, tags, min/max levels, tax rate.
+Active/inactive, discontinued flags.
+Variants
+Parent product with variant attributes (size, color, etc.).
+Separate product_variants table referencing products and holding stock per variant.
+Batch/expiry
+For perishable products: batch_no, mfg_date, exp_date, quantity.
+Automatic “near expiry” and “expired” reports.
+4. Frontend UI/UX (React)
+Auth UI
+Login/register forms with validation and error display.
+Persistent auth (token in memory + refresh or cookies).
+Protected routes and role‑aware navigation/menu (hide/show options).
+Entity management screens
+CRUD pages for:
+Users & roles (Admin only).
+Warehouses, customers, products, categories, suppliers.
+Purchase orders, sales orders, stock movements.
+Features:
+Search, filters (by category, supplier, date), sorting.
+Pagination.
+Inline edits for common fields (e.g., price, quantity).
+Dashboards
+High‑level cards: total stock value, number of products, low‑stock count, pending POs/SOs.
+Charts: monthly purchases vs sales, stock value trend, top products, top suppliers/customers.
+Tables: low‑stock items, near‑expiry batches, recent movements.
+Nice UX
+Toast notifications for success/error.
+Loading skeletons/spinners.
+Confirmation dialogs on destructive actions.
+Modern styling and responsive layout; optional dark mode toggle.
+5. Reporting & Exports
+Reports
+Current stock by product & warehouse.
+Stock movement history for a product or warehouse (date‑filterable).
+Purchase history by supplier and date range.
+Sales history by customer/product/date.
+Expiry/near‑expiry and batch reports.
+Exports
+Export any table view (filtered) to CSV/Excel.
+Printable views for:
+Purchase orders.
+Sales orders/invoices.
+Delivery notes / packing lists.
+6. Integrations & Utilities (still app‑level)
+Email notifications (app feature, no infra config)
+Hooks in business logic to send:
+Low stock alerts.
+PO status changes.
+Near‑expiry batch alerts.
+Barcode/QR support
+Store barcode per product; render barcode/QR in UI.
+Search product by scanning (scanner acts as keyboard input).
+Bulk import tools
+CSV/Excel import wizards for:
+Products, suppliers, customers, initial stock.
+Validation and preview before committing.

@@ -1,7 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  CircularProgress,
+  ImageList,
+  ImageListItem,
+} from '@mui/material';
+import { Edit, Delete, Close } from '@mui/icons-material';
 import { categoriesAPI } from '../services/api';
-import { FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
-import './Categories.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -46,7 +64,6 @@ const Categories = () => {
         categoryId = response.data.id;
       }
 
-      // Upload images if any were selected
       if (selectedImages.length > 0 && categoryId) {
         await handleImageUpload(categoryId);
       }
@@ -63,12 +80,12 @@ const Categories = () => {
 
     setUploadingImages(true);
     try {
-      const formData = new FormData();
+      const fd = new FormData();
       selectedImages.forEach((file) => {
-        formData.append('images', file);
+        fd.append('images', file);
       });
 
-      await categoriesAPI.uploadImages(categoryId, formData);
+      await categoriesAPI.uploadImages(categoryId, fd);
       setSelectedImages([]);
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -80,11 +97,11 @@ const Categories = () => {
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
-    setSelectedImages([...selectedImages, ...files]);
+    setSelectedImages((prev) => [...prev, ...files]);
   };
 
   const removeSelectedImage = (index) => {
-    setSelectedImages(selectedImages.filter((_, i) => i !== index));
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteImage = async (categoryId, imageId, e) => {
@@ -137,213 +154,259 @@ const Categories = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div className="categories-container">
-      <div className="page-header">
-        <h2>Categories</h2>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
+        <Typography variant="h6" fontWeight={600}>
+          Categories
+        </Typography>
+        <Button variant="contained" onClick={() => setShowModal(true)}>
           + Add Category
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="categories-grid">
-        {categories.length === 0 ? (
-          <p className="empty-state">No categories found. Add your first category!</p>
-        ) : (
-          categories.map((category) => (
-            <div key={category.id} className="category-card">
-              {/* Category Images Gallery */}
-              {category.images && category.images.length > 0 && (
-                <div className="category-images">
-                  <div className="category-image-main">
-                    <img
-                      src={getImageUrl(category.images[0].thumbnail_path || category.images[0].image_path)}
-                      alt={category.name}
-                      onClick={() => setShowImageGallery(category.id)}
-                    />
-                    {category.images.length > 1 && (
-                      <div className="image-count-badge">{category.images.length}</div>
+      {categories.length === 0 ? (
+        <Typography color="text.secondary">
+          No categories found. Add your first category!
+        </Typography>
+      ) : (
+        <Grid container spacing={2}>
+          {categories.map((category) => (
+            <Grid item xs={12} sm={6} md={4} key={category.id}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: 3,
+                }}
+              >
+                {category.images && category.images.length > 0 && (
+                  <CardMedia
+                    component="img"
+                    height="180"
+                    image={getImageUrl(
+                      category.images[0].thumbnail_path ||
+                        category.images[0].image_path
                     )}
-                  </div>
-                  {category.images.length > 1 && (
-                    <div className="category-image-thumbnails">
-                      {category.images.slice(0, 4).map((img, idx) => (
-                        <img
-                          key={img.id}
-                          src={getImageUrl(img.thumbnail_path || img.image_path)}
-                          alt={`${category.name} ${idx + 1}`}
-                          onClick={() => setShowImageGallery(category.id)}
-                        />
-                      ))}
-                    </div>
+                    alt={category.name}
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => setShowImageGallery(category.id)}
+                  />
+                )}
+                <CardContent sx={{ flex: 1 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                    mb={1}
+                  >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {category.name}
+                    </Typography>
+                    <Stack direction="row" spacing={0.5}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEdit(category)}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(category.id)}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                  {category.description && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {category.description}
+                    </Typography>
                   )}
-                </div>
-              )}
-              <div className="category-header">
-                <h3>{category.name}</h3>
-                <div className="category-actions">
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleEdit(category)}
-                    title="Edit"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleDelete(category.id)}
-                    title="Delete"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
-              {category.description && (
-                <p className="category-description">{category.description}</p>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
-      {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingCategory ? 'Edit Category' : 'Add New Category'}</h3>
-              <button className="btn-close" onClick={handleCloseModal}>
-                <FaTimes />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="form">
-              <div className="form-group">
-                <label>Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows="3"
-                />
-              </div>
-              
-              {/* Image Upload Section */}
-              <div className="form-group">
-                <label>Category Images</label>
+      <Dialog open={showModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ flexGrow: 1 }}>
+            {editingCategory ? 'Edit Category' : 'Add New Category'}
+          </Typography>
+          <IconButton onClick={handleCloseModal}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            <TextField
+              label="Name"
+              required
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+            <TextField
+              label="Description"
+              multiline
+              minRows={3}
+              value={formData.description}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+            />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Category Images
+              </Typography>
+              <Button variant="outlined" component="label">
+                Select Images
                 <input
                   type="file"
                   accept="image/*"
                   multiple
+                  hidden
                   onChange={handleImageSelect}
-                  className="file-input"
                 />
-                {selectedImages.length > 0 && (
-                  <div className="selected-images-preview">
-                    {selectedImages.map((file, index) => (
-                      <div key={index} className="image-preview-item">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Preview ${index + 1}`}
-                        />
-                        <button
-                          type="button"
-                          className="remove-image-btn"
-                          onClick={() => removeSelectedImage(index)}
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {editingCategory && editingCategory.images && editingCategory.images.length > 0 && (
-                  <div className="existing-images">
-                    <label>Existing Images:</label>
-                    <div className="existing-images-grid">
+              </Button>
+              {selectedImages.length > 0 && (
+                <ImageList cols={4} gap={8} sx={{ mt: 1 }}>
+                  {selectedImages.map((file, index) => (
+                    <ImageListItem key={index} sx={{ position: 'relative' }}>
+                      <img src={URL.createObjectURL(file)} alt={`Preview ${index}`} />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          bgcolor: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                        }}
+                        onClick={() => removeSelectedImage(index)}
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </ImageListItem>
+                  ))}
+                </ImageList>
+              )}
+
+              {editingCategory &&
+                editingCategory.images &&
+                editingCategory.images.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Existing Images
+                    </Typography>
+                    <ImageList cols={4} gap={8}>
                       {editingCategory.images.map((img) => (
-                        <div key={img.id} className="existing-image-item">
+                        <ImageListItem key={img.id} sx={{ position: 'relative' }}>
                           <img
-                            src={getImageUrl(img.thumbnail_path || img.image_path)}
+                            src={getImageUrl(
+                              img.thumbnail_path || img.image_path
+                            )}
                             alt="Category"
                           />
-                          <button
-                            type="button"
-                            className="remove-image-btn"
-                            onClick={(e) => handleDeleteImage(editingCategory.id, img.id, e)}
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              bgcolor: 'rgba(0,0,0,0.6)',
+                              color: 'white',
+                            }}
+                            onClick={(e) =>
+                              handleDeleteImage(editingCategory.id, img.id, e)
+                            }
                           >
-                            <FaTimes />
-                          </button>
-                        </div>
+                            <Close fontSize="small" />
+                          </IconButton>
+                        </ImageListItem>
                       ))}
-                    </div>
-                  </div>
+                    </ImageList>
+                  </Box>
                 )}
-                {!editingCategory && (
-                  <small className="form-hint">You can upload images after creating the category</small>
-                )}
-              </div>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={handleSubmit} variant="contained">
+            {editingCategory ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingCategory ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Image Gallery Modal */}
-      {showImageGallery && (
-        <div className="modal-overlay" onClick={() => setShowImageGallery(null)}>
-          <div className="gallery-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="gallery-header">
-              <h3>Category Images</h3>
-              <button className="btn-close" onClick={() => setShowImageGallery(null)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="gallery-content">
-              {categories.find(c => c.id === showImageGallery)?.images?.map((img) => (
-                <div key={img.id} className="gallery-image-item">
-                  <img
-                    src={getImageUrl(img.image_path)}
-                    alt="Category"
-                  />
-                  <button
-                    className="gallery-delete-btn"
+      <Dialog
+        open={Boolean(showImageGallery)}
+        onClose={() => setShowImageGallery(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ flexGrow: 1 }}>Category Images</Typography>
+          <IconButton onClick={() => setShowImageGallery(null)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <ImageList cols={3} gap={12}>
+            {categories
+              .find((c) => c.id === showImageGallery)
+              ?.images?.map((img) => (
+                <ImageListItem key={img.id}>
+                  <img src={getImageUrl(img.image_path)} alt="Category" />
+                  <Button
+                    size="small"
+                    color="error"
+                    sx={{ mt: 1 }}
                     onClick={(e) => {
                       handleDeleteImage(showImageGallery, img.id, e);
-                      if (categories.find(c => c.id === showImageGallery)?.images?.length === 1) {
-                        setShowImageGallery(null);
-                      }
                     }}
                   >
                     Delete
-                  </button>
-                </div>
+                  </Button>
+                </ImageListItem>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </ImageList>
+        </DialogContent>
+      </Dialog>
+    </Box>
   );
 };
 
 export default Categories;
-
 
