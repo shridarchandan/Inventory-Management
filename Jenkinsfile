@@ -20,8 +20,11 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        checkout scmGit(branches: [[name: '*/master']], extensions: [],
-          userRemoteConfigs: [[url: 'https://github.com/shridarchandan/Inventory-Management']])
+        checkout scmGit(
+          branches: [[name: '*/master']],
+          extensions: [],
+          userRemoteConfigs: [[url: 'https://github.com/shridarchandan/Inventory-Management']]
+        )
         echo('Checkout Successful')
       }
     }
@@ -42,29 +45,30 @@ pipeline {
       }
     }
 
-   stage('Push to ECR') {
-  steps {
-    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                      credentialsId: 'aws-ecr-creds']]) {
-      script {
-        def BACKEND_ECR  = "${REGISTRY}/inventory-backend:${env.IMAGE_TAG}"
-        def FRONTEND_ECR = "${REGISTRY}/inventory-frontend:${env.IMAGE_TAG}"
+    stage('Push to ECR') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                          credentialsId: 'aws-ecr-creds']]) {
+          script {
+            def BACKEND_ECR  = "${REGISTRY}/inventory-backend:${env.IMAGE_TAG}"
+            def FRONTEND_ECR = "${REGISTRY}/inventory-frontend:${env.IMAGE_TAG}"
 
-        sh """
-          aws ecr get-login-password --region ${AWS_REGION} \
-            | docker login --username AWS --password-stdin ${REGISTRY}
+            sh """
+              aws ecr get-login-password --region ${AWS_REGION} \
+                | docker login --username AWS --password-stdin ${REGISTRY}
 
-          docker tag ${BACKEND_LOCAL}  ${BACKEND_ECR}
-          docker tag ${FRONTEND_LOCAL} ${FRONTEND_ECR}
+              docker tag ${BACKEND_LOCAL}  ${BACKEND_ECR}
+              docker tag ${FRONTEND_LOCAL} ${FRONTEND_ECR}
 
-          docker push ${BACKEND_ECR}
-          docker push ${FRONTEND_ECR}
-        """
+              docker push ${BACKEND_ECR}
+              docker push ${FRONTEND_ECR}
+            """
+          }
+        }
       }
     }
-  }
-}
 
+  }  // <-- This closes the stages block
 
   post {
     always {
