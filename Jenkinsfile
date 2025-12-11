@@ -42,28 +42,29 @@ pipeline {
       }
     }
 
-    stage('Push to ECR') {
-      steps {
-        withAWS(credentials: 'aws-ecr-creds', region: "${AWS_REGION}") {
-          script {
-            def BACKEND_ECR  = "${REGISTRY}/inventory-backend:${env.IMAGE_TAG}"
-            def FRONTEND_ECR = "${REGISTRY}/inventory-frontend:${env.IMAGE_TAG}"
+   stage('Push to ECR') {
+  steps {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                      credentialsId: 'aws-ecr-creds']]) {
+      script {
+        def BACKEND_ECR  = "${REGISTRY}/inventory-backend:${env.IMAGE_TAG}"
+        def FRONTEND_ECR = "${REGISTRY}/inventory-frontend:${env.IMAGE_TAG}"
 
-            sh """
-              aws ecr get-login-password --region ${AWS_REGION} \
-                | docker login --username AWS --password-stdin ${REGISTRY}
+        sh """
+          aws ecr get-login-password --region ${AWS_REGION} \
+            | docker login --username AWS --password-stdin ${REGISTRY}
 
-              docker tag ${BACKEND_LOCAL}  ${BACKEND_ECR}
-              docker tag ${FRONTEND_LOCAL} ${FRONTEND_ECR}
+          docker tag ${BACKEND_LOCAL}  ${BACKEND_ECR}
+          docker tag ${FRONTEND_LOCAL} ${FRONTEND_ECR}
 
-              docker push ${BACKEND_ECR}
-              docker push ${FRONTEND_ECR}
-            """
-          }
-        }
+          docker push ${BACKEND_ECR}
+          docker push ${FRONTEND_ECR}
+        """
       }
     }
   }
+}
+
 
   post {
     always {
