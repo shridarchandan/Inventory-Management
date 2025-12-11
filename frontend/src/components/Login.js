@@ -108,7 +108,7 @@ function Login() {
                   </Typography>
                 </Box>
                 <Typography variant="caption" sx={{ opacity: 0.8, mt: 3 }}>
-                  Secure JWT authentication · Role-ready design
+                  Secure JWT authentication · Role-ready design!
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
