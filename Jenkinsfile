@@ -79,6 +79,9 @@ pipeline {
               # 0) Ensure kubeconfig points to your cluster (if not already done globally)
               # aws eks update-kubeconfig --name your-cluster --region ${AWS_REGION}
 
+              kubectl get namespace inventory >/dev/null 2>&1 || \
+              kubectl create namespace inventory
+              
               # 1) Create / update Secret from Jenkins credentials
               kubectl create secret generic db-secret \\
                 -n inventory \\
