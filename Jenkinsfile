@@ -23,7 +23,7 @@ pipeline {
         checkout scmGit(
           branches: [[name: '*/master']],
           extensions: [],
-          userRemoteConfigs: [[url: 'https://github.com/shridarchandan/Inventory-Management']]
+          userRemoteConfigs: [[url: 'https://github.com/shridarchandan/Inventory-Management-K8s-Deployment']]
         )
         echo('Checkout Successful')
       }
