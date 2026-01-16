@@ -285,9 +285,9 @@ http://a482944cbd6d94306ad2e043f89aabc8-1616021472.us-east-1.elb.amazonaws.com:5
 Now the application will be live at the Load Balancer DNS.
 
 ![Final Output](images/inventory%20project%20screenshots/final%20op.PNG)
+![Products](images/inventory%20project%20screenshots/Products.PNG)
 ![Add Feature](images/inventory%20project%20screenshots/Add%20feature.PNG)
 
-![Products](images/inventory%20project%20screenshots/Products.PNG)
 
 
 ---
